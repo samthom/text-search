@@ -13,6 +13,7 @@ import (
 type Storage interface {
 	Add(context.Context, string, io.Reader, int64, minio.PutObjectOptions) (string, error)
 	Get(context.Context, string) (io.Reader, error)
+	GetAll(context.Context) <-chan minio.ObjectInfo
 	Delete(context.Context, string) error
 	Watch([]string) <-chan notification.Info
 }
@@ -46,6 +47,13 @@ func (s *minioStorage) Add(ctx context.Context, objectName string, reader io.Rea
 		return "", err
 	}
 	return r.ETag, nil
+}
+
+// GetAll method returns a readonly channel
+func (s *minioStorage) GetAll(ctx context.Context) <-chan minio.ObjectInfo {
+	return s.Client.ListObjects(ctx, s.BucketName, minio.ListObjectsOptions{
+		Recursive: true,
+	})
 }
 
 // Get methods with object name return readable stream of the object requested
