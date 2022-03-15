@@ -11,11 +11,11 @@ import (
 // Storage operations interface
 // Add, Delete files, Watch bucket for notifications
 type Storage interface {
-	Add(context.Context, string, io.Reader, int64, minio.PutObjectOptions) (string, error)
-	Get(context.Context, string) (io.Reader, error)
-	GetAll(context.Context) <-chan minio.ObjectInfo
-	Delete(context.Context, string) error
-	Watch([]string) <-chan notification.Info
+	Add(ctx context.Context, ObjectName string, reader io.Reader, size int64, opts minio.PutObjectOptions) (ETag string, err error)
+	Get(ctx context.Context, objectName string) (reader io.Reader, err error)
+	GetAll(ctx context.Context) <-chan minio.ObjectInfo
+	Delete(ctx context.Context, objectName string) (err error)
+	Watch(operations []string) <-chan notification.Info
 }
 
 // minioStorage struct
