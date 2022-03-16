@@ -19,6 +19,8 @@ type fileParser struct {
 	*tika.Client
 }
 
+// NewParser func return new new Parser struct by connecting to the tika server
+// if the url is nil then connection will use default url "http://localhost:9998"
 func NewParser(url *string) Parser {
 	if url != nil {
 		client := tika.NewClient(nil, *url)

@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/RediSearch/redisearch-go/redisearch"
@@ -55,15 +56,15 @@ func (db *dbClient) Get(key string) (*redisearch.Document, error) {
 // if not then creates new index with specified schema and returns bool
 func (db *dbClient) CreateSchema(sc *redisearch.Schema) (bool, error) {
 	idx, err := db.Client.Info()
-	if err != nil {
-		return false, err
-	} else if idx.Name == db.Index {
+	if err != nil && err.Error() == "Unknown Index name" {
+		if err = db.Client.CreateIndex(sc); err != nil {
+			return false, err
+		}
+		return true, nil
+	} else if idx != nil && idx.Name == db.Index {
 		return true, nil
 	}
-	if err = db.Client.CreateIndex(sc); err != nil {
-		return false, err
-	}
-	return true, nil
+	return false, nil
 }
 
 type Index interface {
@@ -84,8 +85,8 @@ func NewIndex(db DB) (Index, error) {
 	i := &idx{db}
 	ok, err := i.Create()
 	if err != nil || !ok {
-		if !ok {
-			return nil, errors.New("unable to crate index in DB")
+		if err == nil && !ok {
+			return nil, errors.New("unable to create index in DB")
 		}
 		return nil, err
 	}
@@ -128,11 +129,14 @@ func (i *idx) Find(key string, limit int, fields ...string) ([]File, error) {
 		return f, nil
 	}
 	for _, v := range d {
-		file := NewFile(v.Id, "", nil, 0)
-		err := file.UnMarshal(v.Payload)
-		if err != nil {
-			return f, err
+		sizeStr := v.Properties["size"].(string)
+		size, _ := strconv.Atoi(sizeStr)
+		file := &fileInfo{
+			ETag: v.Id,
+			Key:  v.Properties["key"].(string),
+			Size: int64(size),
 		}
+		f = append(f, file)
 	}
 	return f, nil
 }
@@ -144,10 +148,12 @@ func (i *idx) Get(key string) (File, error) {
 		return nil, err
 	}
 	if d != nil {
-		file := NewFile(key, "", nil, 0)
-		err := file.UnMarshal(d.Payload)
-		if err != nil {
-			return nil, err
+		sizeStr := d.Properties["size"].(string)
+		size, _ := strconv.Atoi(sizeStr)
+		file := &fileInfo{
+			ETag: d.Id,
+			Key:  d.Properties["key"].(string),
+			Size: int64(size),
 		}
 		return file, nil
 	}
@@ -161,7 +167,7 @@ type File interface {
 	UnMarshal(data []byte) error
 	GetETag() string
 	GetKey() string
-	GetBody() *string
+	GetBody() string
 	GetSize() int64
 }
 
@@ -195,8 +201,8 @@ func (f *fileInfo) GetKey() string {
 	return f.Key
 }
 
-func (f *fileInfo) GetBody() *string {
-	return &f.Body
+func (f *fileInfo) GetBody() string {
+	return f.Body
 }
 
 func (f *fileInfo) GetSize() int64 {

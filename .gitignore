@@ -14,8 +14,7 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-data/*.minio.sys
-data/searchr
+data/searchr/*
 db/*.rdb
 ui/node_modules
 */.vscode
