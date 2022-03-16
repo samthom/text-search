@@ -8,6 +8,7 @@ require (
 	github.com/RediSearch/redisearch-go v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
+	github.com/go-chi/cors v1.2.0
 	github.com/gomodule/redigo v1.8.3 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect

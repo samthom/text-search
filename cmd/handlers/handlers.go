@@ -36,7 +36,7 @@ func (h *searchrHandlerstr) Upload() http.HandlerFunc {
 		f, handler, err := r.FormFile("file")
 		if err != nil {
 			log.Error(err)
-			http.Error(rw, "Unable to parse file from request", http.StatusInternalServerError)
+			http.Error(rw, "Unable to parse file from request", http.StatusBadRequest)
 			return
 		}
 		defer f.Close()

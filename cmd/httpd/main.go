@@ -6,10 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"text/template"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/samthom/text-search/cmd/handlers"
@@ -26,17 +28,35 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.SetHeader("content-type", "application/json"))
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+
+	tpl := template.Must(template.ParseFiles("./index.html"))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		_, e := w.Write([]byte(`{ "message" : "welcome to Searchr." }`))
-		if e != nil {
-			log.Error("index controller failed.")
+		w.Header().Add("content-type", "text/html")
+		err := tpl.Execute(w, nil)
+		if err != nil {
+			log.Error(err)
 		}
+		// _, e := w.Write([]byte(`{ "message" : "welcome to Searchr." }`))
+		// if e != nil {
+		// 	log.Error("index controller failed.")
+		// }
 	})
 
 	// Create storage object
 	storageOpts := &minio.Options{
-		Creds:  credentials.NewStaticV4("searchr", "searchrpwd", ""),
+		// Creds:  credentials.NewStaticV4("searchr", "searchrpwd", ""),
+		Creds:  credentials.NewStaticV4("ROOT", "PASSWORD", ""),
 		Secure: false,
 	}
 	st, err := storage.NewStorage("localhost:9000", "searchr", storageOpts)

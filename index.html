@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Searchr</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+  </head>
+  <body>
+    <section class="section">
+        <div class="container">
+        <h1 class="title is-1">
+            Searchr
+        </h1>
+        <p class="subtitle">
+            File indexing and searching
+        </p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="box is-half">
+                <h2 class="title is-3">Search File</h2>
+                <input id="search" class="input" type="text" placeholder="Text input" onkeyup="search()">
+                <div id="search-results">
+                    
+                </div>
+            </div>
+
+            <div class="box">
+                <h2 class="title is-3">Upload File</h2>
+                <div class="file is-boxed">
+                    <label class="file-label">
+                      <input class="file-input" type="file" name="resume" onchange="upload()">
+                      <span class="file-cta">
+                        <span class="file-icon">
+                          <i class="fas fa-upload"></i>
+                        </span>
+                        <span class="file-label">
+                          Choose a file…
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+            </div>
+            <article id="upload-error" class="message is-danger" style="display: none">
+                <div class="message-body">
+                    Unable to upload 
+                </div>
+            </article>
+
+            <article id="upload-success" class="message is-success" style="display: none">
+                <div class="message-body">
+                    Success
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <script>
+        function upload(e) {
+            const input = document.querySelector('input[type="file"]');
+            const file = input.files[0];
+
+            const formData = new FormData();
+            formData.append("file", file, file.name)
+
+            axios.post("/upload", formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            .then(function(res) {
+                console.info(res)
+                document.getElementById("upload-success").style.display = "block";
+                setTimeout(function(){
+                    document.getElementById("upload-success").style.display = "none";
+                }, 3000);
+
+            })
+            .catch(function(error) {
+                console.error(error)
+                document.getElementById("upload-error").style.display = "block";
+                setTimeout(function(){
+                    document.getElementById("upload-error").style.display = "none";
+                }, 3000);
+            })
+        }
+
+        function search(e) {
+            let input = document.getElementById("search")
+            let val = input.value
+            let resultSection = document.getElementById("search-results")
+            if(val.length > 4) {
+                axios.get(`/search?file=${val}`).
+                then(function(res) {
+                    console.info(res)
+                    if(res.status==200) {
+                        let newHTML = ""
+                        res.data.forEach(function(d) {
+                            newHTML += `<div class="card">
+                                            <div class="card-content">
+                                                <div class="content">
+                                                    <p><b>Name:</b> ${d.key} &nbsp&nbsp&nbsp&nbsp<b>Size:</b> ${d.size}  &nbsp&nbsp&nbsp&nbsp<b>ETag:</b> ${d.ETag} &nbsp;&nbsp;&nbsp;<a href="google.com" target="_blank" class="button is-small is-info">check</a></p>
+                                                </div>
+                                            </div>
+                                        </div>`
+                        })
+                        resultSection.innerHTML = newHTML
+                    }
+                    if(res.status==204)
+                        resultSection.innerHTML = ""
+                })
+            } else if(val.length < 4) resultSection.innerHTML = "" 
+        }
+    </script>
+
+
+    </body>
+</html>
