@@ -5,7 +5,9 @@ go 1.17
 require github.com/google/go-tika v0.2.0
 
 require (
+	github.com/RediSearch/redisearch-go v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/gomodule/redigo v1.8.3 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/klauspost/compress v1.13.5 // indirect
@@ -19,8 +21,8 @@ require (
 	github.com/rs/xid v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
