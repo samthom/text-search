@@ -60,8 +60,9 @@ func (h *searchrHandlerstr) Upload() http.HandlerFunc {
 			return
 		}
 
+		URL := h.storage.GetURL(handler.Filename)
 		// add index
-		fl := db.NewFile(ETag, handler.Filename, &body, handler.Size)
+		fl := db.NewFile(ETag, URL, handler.Filename, &body, handler.Size)
 		err = h.index.Save(fl)
 		if err != nil {
 			log.Error(err)
@@ -75,8 +76,9 @@ func (h *searchrHandlerstr) Upload() http.HandlerFunc {
 func (h *searchrHandlerstr) Search() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		search := r.URL.Query().Get("file")
+		search = "@body:" + search
 
-		docs, err := h.index.Find(search, 2, "key", "size")
+		docs, err := h.index.Find(search, 2, "key", "size", "url")
 		if err != nil {
 			log.Error(err)
 			http.Error(rw, "Unable search for file", http.StatusInternalServerError)

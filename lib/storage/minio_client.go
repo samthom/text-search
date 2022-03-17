@@ -16,6 +16,7 @@ type Storage interface {
 	GetAll(ctx context.Context) <-chan minio.ObjectInfo
 	Delete(ctx context.Context, objectName string) (err error)
 	Watch(operations []string) <-chan notification.Info
+	GetURL(key string) (url string)
 }
 
 // minioStorage struct
@@ -23,6 +24,7 @@ type Storage interface {
 type minioStorage struct {
 	Client     minio.Client
 	BucketName string
+	Endpoint   string
 }
 
 // NewStorage returns new instance of storage
@@ -36,6 +38,7 @@ func NewStorage(endpoint string, bucketName string, opts *minio.Options) (Storag
 	return &minioStorage{
 		Client:     *Client,
 		BucketName: bucketName,
+		Endpoint:   endpoint,
 	}, nil
 }
 
@@ -73,4 +76,9 @@ func (s *minioStorage) Delete(ctx context.Context, objectName string) error {
 // 	- Watch returns a readable channel to read notifications
 func (s *minioStorage) Watch(operations []string) <-chan notification.Info {
 	return s.Client.ListenBucketNotification(context.Background(), s.BucketName, "", "", operations)
+}
+
+// Need improvement
+func (s *minioStorage) GetURL(key string) (url string) {
+	return "http://" + s.Endpoint + "/" + s.BucketName + "/" + key
 }

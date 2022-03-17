@@ -96,6 +96,7 @@ func NewIndex(db DB) (Index, error) {
 // fileSchema - File data model to be stored inside the redis cache for indexing
 var fileSchema = redisearch.NewSchema(redisearch.DefaultOptions).
 	AddField(redisearch.NewTextField("body")).
+	AddField(redisearch.NewTextField("url")).
 	AddField(redisearch.NewTextField("key")).
 	AddField(redisearch.NewNumericField("created_at")).
 	AddField(redisearch.NewNumericFieldOptions("size", redisearch.NumericFieldOptions{NoIndex: false, Sortable: true}))
@@ -111,6 +112,7 @@ func (i *idx) Save(f File) error {
 	// create redis doc
 	doc := redisearch.NewDocument(f.GetETag(), 1.0)
 	doc.Set("key", f.GetKey()).
+		Set("url", f.GetURL()).
 		Set("body", f.GetBody()).
 		Set("size", f.GetSize()).
 		Set("created_at", time.Now().Unix())
@@ -134,6 +136,7 @@ func (i *idx) Find(key string, limit int, fields ...string) ([]File, error) {
 		file := &fileInfo{
 			ETag: v.Id,
 			Key:  v.Properties["key"].(string),
+			URL:  v.Properties["url"].(string),
 			Size: int64(size),
 		}
 		f = append(f, file)
@@ -152,6 +155,7 @@ func (i *idx) Get(key string) (File, error) {
 		size, _ := strconv.Atoi(sizeStr)
 		file := &fileInfo{
 			ETag: d.Id,
+			URL:  d.Properties["url"].(string),
 			Key:  d.Properties["key"].(string),
 			Size: int64(size),
 		}
@@ -166,6 +170,7 @@ type File interface {
 	Marshal() ([]byte, error)
 	UnMarshal(data []byte) error
 	GetETag() string
+	GetURL() string
 	GetKey() string
 	GetBody() string
 	GetSize() int64
@@ -175,13 +180,14 @@ type File interface {
 type fileInfo struct {
 	ETag      string `json:"ETag,omitempty"`
 	Key       string `json:"key"`
+	URL       string `json:"url"`
 	Body      string `json:"body,omitempty"`
 	Size      int64  `json:"size,omitempty"`
 	CreatedAt int64  `json:"created_at,omitempty"`
 }
 
-func NewFile(ETag string, Key string, Body *string, size int64) File {
-	return &fileInfo{ETag, Key, *Body, size, 0}
+func NewFile(ETag string, URL string, Key string, Body *string, size int64) File {
+	return &fileInfo{ETag, Key, URL, *Body, size, 0}
 }
 
 // Marshal method to return json byte slice for sending back server
@@ -195,6 +201,10 @@ func (f *fileInfo) UnMarshal(data []byte) error {
 
 func (f *fileInfo) GetETag() string {
 	return f.ETag
+}
+
+func (f *fileInfo) GetURL() string {
+	return f.URL
 }
 
 func (f *fileInfo) GetKey() string {
