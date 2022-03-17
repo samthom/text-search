@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -16,6 +17,9 @@ type SearchrHandlers interface {
 	Upload() http.HandlerFunc
 	// Search
 	Search() http.HandlerFunc
+
+	// Watch for changes (Job)
+	Watch()
 }
 
 type searchrHandlerstr struct {
@@ -42,7 +46,7 @@ func (h *searchrHandlerstr) Upload() http.HandlerFunc {
 		defer f.Close()
 
 		// Upload file
-		ETag, err := h.storage.Add(r.Context(), handler.Filename, f, handler.Size, minio.PutObjectOptions{
+		_, err = h.storage.Add(r.Context(), handler.Filename, f, handler.Size, minio.PutObjectOptions{
 			ContentType: handler.Header.Get("Content-Type"),
 		})
 		if err != nil {
@@ -51,24 +55,24 @@ func (h *searchrHandlerstr) Upload() http.HandlerFunc {
 			return
 		}
 
-		// parse file
-		body, err := h.parser.ParseFile(r.Context(), f)
-		// body, err := h.parser.ParseFileReader(r.Context(), f)
-		if err != nil {
-			log.Error(err)
-			http.Error(rw, "Unable to parse content from file", http.StatusInternalServerError)
-			return
-		}
+		// // parse file
+		// body, err := h.parser.ParseFile(r.Context(), f)
+		// // body, err := h.parser.ParseFileReader(r.Context(), f)
+		// if err != nil {
+		// 	log.Error(err)
+		// 	http.Error(rw, "Unable to parse content from file", http.StatusInternalServerError)
+		// 	return
+		// }
 
-		URL := h.storage.GetURL(handler.Filename)
-		// add index
-		fl := db.NewFile(ETag, URL, handler.Filename, &body, handler.Size)
-		err = h.index.Save(fl)
-		if err != nil {
-			log.Error(err)
-			http.Error(rw, "Unable to index the file", http.StatusInternalServerError)
-			return
-		}
+		// URL := h.storage.GetURL(handler.Filename)
+		// // add index
+		// fl := db.NewFile(ETag, URL, handler.Filename, &body, handler.Size)
+		// err = h.index.Save(fl)
+		// if err != nil {
+		// 	log.Error(err)
+		// 	http.Error(rw, "Unable to index the file", http.StatusInternalServerError)
+		// 	return
+		// }
 		rw.WriteHeader(http.StatusCreated)
 	}
 }
@@ -88,5 +92,32 @@ func (h *searchrHandlerstr) Search() http.HandlerFunc {
 			rw.WriteHeader(http.StatusNoContent)
 		}
 		json.NewEncoder(rw).Encode(docs)
+	}
+}
+
+func (h *searchrHandlerstr) Watch() {
+	log.Info("Watching for uploads in storage.")
+	ch := h.storage.Watch([]string{"s3:ObjectCreated:*"})
+
+	for info := range ch {
+		for _, event := range info.Records {
+			objectInfo := event.S3.Object
+			file, err := h.storage.Get(context.TODO(), objectInfo.Key)
+			if err != nil {
+				continue
+			}
+			body, err := h.parser.ParseFile(context.TODO(), file)
+			if err != nil {
+				continue
+			}
+			URL := h.storage.GetURL(objectInfo.Key)
+			// add index
+			fl := db.NewFile(objectInfo.ETag, URL, objectInfo.Key, &body, objectInfo.Size)
+			err = h.index.Save(fl)
+			if err != nil {
+				continue
+			}
+			log.Info(objectInfo.Key, " - indexed")
+		}
 	}
 }

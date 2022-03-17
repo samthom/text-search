@@ -81,6 +81,9 @@ func main() {
 	r.Post("/upload", h.Upload())
 	r.Get("/search", h.Search())
 
+	// Start watching for changes inside storage
+	go h.Watch()
+
 	// Server code
 	s := &http.Server{
 		Addr:         ":2112",
