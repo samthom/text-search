@@ -105,7 +105,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM)
 
 	sig := <-sigChan
-	log.Warning("Recieved terminate, graceful shutdown ", sig)
+	log.Warning("Received terminate, graceful shutdown ", sig)
 	tc, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer func() {
 		cancel()
